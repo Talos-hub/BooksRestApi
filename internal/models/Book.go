@@ -1,5 +1,6 @@
 package models
 
+// Book is model that implemented behavior a real book.
 type Book struct {
 	ID              uint64 // unique Id
 	Book            string // Name of a Book

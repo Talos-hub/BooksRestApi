@@ -2,6 +2,9 @@ package adapters
 
 import "github.com/Talos-hub/BooksRestApi/internal/models"
 
+// It  interface that provides Storage.
+// It has all methods for work with any storage:
+// SqlLite, Postgresql, json file, etc.
 type Storage interface {
 	GetAll() ([]models.Book, error)         // returns all elements from a storage
 	GetById(id uint64) (models.Book, error) // returns one item from a storage by id
