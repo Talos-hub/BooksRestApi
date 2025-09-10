@@ -1,4 +1,4 @@
-package adapters
+package abstraction
 
 import "github.com/Talos-hub/BooksRestApi/internal/models"
 
@@ -11,4 +11,5 @@ type Storage interface {
 	Save(book models.Book) error            // add a book to storage
 	Delete(id uint64) error                 // delete a item from storage
 	Update(book models.Book) error          // update a item in storage
+	Close() error                           // For proper resource cleanup
 }

@@ -1,4 +1,4 @@
-package adapters
+package abstraction
 
 // Interface that provides Logger.
 // It contains Info(), Error(), Warn()
@@ -7,4 +7,5 @@ type Logger interface {
 	Info(msg string, a ...any)  // Write info
 	Error(msg string, a ...any) // Write error
 	Warn(msg string, a ...any)  // write warning
+	Debag(msg string, a ...any)
 }
