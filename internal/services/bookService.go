@@ -11,6 +11,7 @@ type bookService struct {
 	storage abstraction.Storage // it might be any strage for instance Postgresqls, Sqlite, json
 }
 
+// Construction that set a logger and a storage and returns pointer to bookService
 func NewBookService(logger abstraction.Logger, storage abstraction.Storage) *bookService {
 	return &bookService{
 		logger:  logger,
