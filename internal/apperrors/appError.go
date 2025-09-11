@@ -78,3 +78,15 @@ func NewValidateErr(mesage string, fields []string, err error) *ValidateErr {
 		Err:     err,
 	}
 }
+
+type ValidationReflectErr struct {
+	Message string
+}
+
+func (v *ValidationReflectErr) Error() string {
+	return v.Message
+}
+
+func NewValidateReflectErr(message string) *ValidateErr {
+	return &ValidateErr{Message: message}
+}
