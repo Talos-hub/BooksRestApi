@@ -1,6 +1,7 @@
 package validations
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/Talos-hub/BooksRestApi/internal/apperrors"
@@ -57,5 +58,29 @@ func Validate(book any) *apperrors.ValidateErr {
 	// TODO validationErrors := make([]string, 0, minimallyFields)
 
 	// TODO
+	return nil
+}
+
+// field specific validation function
+func validateID(value reflect.Value) []string {
+	if value.Kind() != reflect.Uint64 {
+		return []string{"id must be uint64"}
+	}
+	if value.Uint() == 0 {
+		return []string{"id cannot be ziro"}
+	}
+	return nil
+}
+
+func validateString(value reflect.Value, typeOff string) []string {
+	if value.Kind() != reflect.String {
+		return []string{fmt.Sprintf("%s: must be string", typeOff)}
+	}
+	if value.String() == "" {
+		return []string{fmt.Sprintf("%s: cannot be empty", typeOff)}
+	}
+	if len(value.String()) > 100 {
+		return []string{fmt.Sprintf("%s: cannot be large than 100", typeOff)}
+	}
 	return nil
 }
