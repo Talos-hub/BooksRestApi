@@ -1,9 +1,13 @@
 package services
 
 import (
+	"errors"
+	"time"
+
 	"github.com/Talos-hub/BooksRestApi/internal/abstraction"
 	"github.com/Talos-hub/BooksRestApi/internal/apperrors"
 	"github.com/Talos-hub/BooksRestApi/internal/models"
+	"github.com/Talos-hub/BooksRestApi/internal/validations"
 )
 
 // BookService impemented handlers for hadle book.
@@ -40,4 +44,35 @@ func (s *bookService) GetBook(id uint64) (models.Book, *apperrors.AppError) {
 	}
 
 	return book, nil
+}
+
+// Created created new book and save it to storage
+func (s *bookService) CreateBook(book models.CreateBookRequest) *apperrors.AppError {
+	// validation
+	err := validations.Validate(book)
+	if err != nil {
+		// if someone use it worng it returns ValidationReflectErr
+		// For instance: if parameter is func it returns the error
+		if errors.Is(err, &apperrors.ValidationReflectErr{}) {
+			s.logger.Error("Error validation", "error", err)
+			return apperrors.NewAppError(500, "error creating a book", err)
+		}
+		return apperrors.NewAppError(400, "invalid book data", err)
+	}
+
+	t := time.Now() // get time
+	// created new book
+	newBook := models.Book{
+		General:   book.Book,
+		CreatedAt: t,
+		UpdatedAt: t,
+	}
+	// save a book
+	err = s.storage.Save(newBook)
+	if err != nil {
+		s.logger.Error("Error save a book", "error", err)
+		return apperrors.NewAppError(500, "faild to create a book", err)
+	}
+
+	return nil
 }
