@@ -38,7 +38,7 @@ var (
 // It returns message error like: expected a struct
 // Also there is reflection, it might be slow.
 // It is safty function, if you will try to use parameter like a function and stuff It don't panic
-func Validate(book any) *apperrors.ValidateErr {
+func Validate(book any) error {
 	// it cannot validate nil object
 	// book is nil when type and value of inteface{} are nil
 	if book == nil {
@@ -51,11 +51,6 @@ func Validate(book any) *apperrors.ValidateErr {
 	// interface{} has two things: type and value
 	// describe
 	value := reflect.ValueOf(book)
-
-	if value.NumField() == 0 {
-		return apperrors.NewValidateErr("struct has no fields", nil,
-			apperrors.NewValidateReflectErr("error validation"))
-	}
 
 	// Handle pointers by dereferencing them
 	if value.Kind() == reflect.Pointer {
@@ -94,6 +89,10 @@ func validateBookFields(value reflect.Value) []string {
 	// here is errors message from validation functions
 	// when validation is finished it function returns the slice to up
 	errorsSlice := make([]string, 0, value.NumField())
+	if value.NumField() == 0 {
+		errorsSlice = append(errorsSlice, "struct is empty")
+		return errorsSlice
+	}
 
 	t := value.Type()
 
