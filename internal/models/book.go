@@ -20,9 +20,11 @@ type Book struct {
 }
 
 type UpdateBookRequest struct {
-	Book GeneralBook
+	Book      GeneralBook `jsons:"book"`
+	UpdatedAt time.Time   `json:"updateAt"` // time when is was updated
 }
 
 type CreateBookRequest struct {
-	Book GeneralBook
+	Book      GeneralBook `json:"book"`
+	CreatedAt time.Time   `json:"createdAt"` // time when is was created
 }

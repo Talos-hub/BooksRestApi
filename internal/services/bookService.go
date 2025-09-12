@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"time"
 
 	"github.com/Talos-hub/BooksRestApi/internal/abstraction"
 	"github.com/Talos-hub/BooksRestApi/internal/apperrors"
@@ -39,7 +38,7 @@ func (s *bookService) GetBooks() ([]models.Book, *apperrors.AppError) {
 func (s *bookService) GetBook(id uint64) (models.Book, *apperrors.AppError) {
 	book, err := s.storage.GetById(id)
 	if err != nil {
-		s.logger.Error("Failed to get book by ID", "id", id, "error", err)
+		s.logger.Info("Failed to get book by ID", "id", id, "error", err)
 		return models.Book{}, apperrors.NewAppError(404, "book not found", err)
 	}
 
@@ -60,12 +59,11 @@ func (s *bookService) CreateBook(book models.CreateBookRequest) *apperrors.AppEr
 		return apperrors.NewAppError(400, "invalid book data", err)
 	}
 
-	t := time.Now() // get time
 	// created new book
 	newBook := models.Book{
 		General:   book.Book,
-		CreatedAt: t,
-		UpdatedAt: t,
+		CreatedAt: book.CreatedAt,
+		UpdatedAt: book.CreatedAt,
 	}
 	// save a book
 	err = s.storage.Save(newBook)
@@ -75,4 +73,25 @@ func (s *bookService) CreateBook(book models.CreateBookRequest) *apperrors.AppEr
 	}
 
 	return nil
+}
+
+func (s *bookService) UpdateBook(id uint64, update models.UpdateBookRequest) *apperrors.AppError {
+	book, err := s.storage.GetById(id)
+	if err != nil {
+		s.logger.Info("faild to update a book")
+		return apperrors.NewAppError(404, "a book not found", err)
+	}
+
+	// validation
+	err = validations.Validate(update)
+	if err != nil {
+		// if someone use it worng it returns ValidationReflectErr
+		// For instance: if parameter is func it returns the error
+		if errors.Is(err, &apperrors.ValidationReflectErr{}) {
+			s.logger.Error("Error validation", "error", err)
+			return apperrors.NewAppError(500, "error update a book", err)
+		}
+		return apperrors.NewAppError(400, "invalid book data", err)
+	}
+
 }
