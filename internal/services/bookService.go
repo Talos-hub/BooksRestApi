@@ -28,8 +28,8 @@ func NewBookService(logger abstraction.Logger, storage abstraction.Storage) *boo
 func (s *bookService) GetBooks() ([]models.Book, *apperrors.AppError) {
 	books, err := s.storage.GetAll()
 	if err != nil {
-		s.logger.Error("Error getting all books", "error", err)
-		return nil, apperrors.NewAppError(500, "error getting all books", err)
+		s.logger.Info("Error getting all books", "error", err)
+		return nil, apperrors.NewAppError(404, "error getting all books", err)
 	}
 	return books, nil
 }
@@ -75,7 +75,9 @@ func (s *bookService) CreateBook(book models.CreateBookRequest) *apperrors.AppEr
 	return nil
 }
 
+// UpdateBook update a book in storage
 func (s *bookService) UpdateBook(id uint64, update models.UpdateBookRequest) *apperrors.AppError {
+	// get a old book
 	book, err := s.storage.GetById(id)
 	if err != nil {
 		s.logger.Info("faild to update a book")
@@ -94,4 +96,30 @@ func (s *bookService) UpdateBook(id uint64, update models.UpdateBookRequest) *ap
 		return apperrors.NewAppError(400, "invalid book data", err)
 	}
 
+	// created new book
+	newBook := models.Book{
+		General:   update.Book,
+		CreatedAt: book.CreatedAt,
+		UpdatedAt: update.UpdatedAt,
+	}
+
+	err = s.storage.Update(newBook)
+	if err != nil {
+		return apperrors.NewAppError(500, "error update a book", err)
+	}
+
+	return nil
+}
+
+func (s *bookService) DeleteBook(id uint64) *apperrors.AppError {
+	if _, err := s.storage.GetById(id); err != nil {
+		return apperrors.NewAppError(404, "a book not found", err)
+	}
+
+	if err := s.storage.Delete(id); err != nil {
+		s.logger.Error("Failed to delete book", "id", id, "error", err)
+		return apperrors.NewAppError(500, "Failed to delete book", err)
+	}
+
+	return nil
 }
