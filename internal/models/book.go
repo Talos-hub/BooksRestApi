@@ -7,8 +7,8 @@ import (
 type GeneralBook struct {
 	ID              uint64    `json:"id"`              // unique Id
 	Title           string    `json:"title"`           // Name of a Book
-	Ganre           string    `json:"ganre"`           // for example Adnveture, Roman
-	PublicationData time.Time `json:"publicationData"` // for instance 1970
+	Genre           string    `json:"ganre"`           // for example Adnveture, Roman
+	PublicationDate time.Time `json:"publicationData"` // for instance 1970
 	Author          string    `json:"author"`
 }
 

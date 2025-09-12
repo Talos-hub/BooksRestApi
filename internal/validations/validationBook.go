@@ -1,18 +1,29 @@
 package validations
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/Talos-hub/BooksRestApi/internal/apperrors"
 )
 
 const minimallyFields = 5
 
+const (
+	fieldId     = "id"
+	fieldTitle  = "title"
+	fieldGenre  = "genre"
+	fieldAuthor = "author"
+)
+
 // Warning
 // You could say why I don't use simple way like package validator or type Validator interface{Valudate()error}
 // But I want to to know how works with reflection proparly and safety.
-// It shows fundamentaion data about golang, and proparl aproach with refelction
+// It shows fundamentaion data about golang, and proparly aproach with refelction
 // As well as I don't use meta tegs because it does't conveniant in this case.
 // Also it has very good documentation and it doesn't needs any dependencies.
 
@@ -36,6 +47,11 @@ func Validate(book any) *apperrors.ValidateErr {
 	// describe
 	value := reflect.ValueOf(book)
 
+	if value.NumField() == 0 {
+		return apperrors.NewValidateErr("struct has no fields", nil,
+			apperrors.NewValidateReflectErr("error validation"))
+	}
+
 	// Handle pointers by dereferencing them
 	if value.Kind() == reflect.Pointer {
 		if value.IsNil() {
@@ -55,10 +71,78 @@ func Validate(book any) *apperrors.ValidateErr {
 	}
 
 	// it use minimallyFileds for avoid allocation
-	// TODO validationErrors := make([]string, 0, minimallyFields)
+	validationErrors := make([]string, 0, minimallyFields)
 
+	validationErrors = append(validationErrors, validateBookFields(value)...)
+
+	if len(validationErrors) > 0 {
+		return apperrors.NewValidateErr("error validation", validationErrors, errors.New("error validation"))
+	}
 	// TODO
 	return nil
+}
+
+// validateBookFields checks fields and chooses
+// a specific function for validation
+// if spicific fields is wrong it add it to slice that contains errors message
+func validateBookFields(value reflect.Value) []string {
+	// here is errors message from validation functions
+	// when validation is finished it function returns the slice to up
+	errorsSlice := make([]string, 0, value.NumField())
+
+	t := value.Type()
+
+	for i := 0; i < value.NumField(); i++ {
+		// get type of a field
+		field := t.Field(i)
+
+		// avoid panic, because if a field is not exported it can be panic
+		if !field.IsExported() {
+			continue
+		}
+
+		// get value of a field
+		fieldValue := value.Field(i)
+
+		//handle pointers by dereferencing them
+		if fieldValue.Kind() == reflect.Pointer {
+			// if a pointer is nil add to a error slice
+			if fieldValue.IsNil() {
+				errorsSlice = append(errorsSlice, fmt.Sprintf("%s field is nil", field.Name))
+				continue
+			}
+			// dereferencing
+			fieldValue = fieldValue.Elem()
+		}
+
+		// handle nested structions recursively (skip time.Time since the time is valid)
+		if fieldValue.Kind() == reflect.Struct {
+			// time are valid
+			if fieldValue.Type() == reflect.TypeOf(time.Time{}) {
+				continue
+			}
+			// recursively
+			nestedErrs := validateBookFields(fieldValue)
+			errorsSlice = append(errorsSlice, nestedErrs...)
+			continue
+		}
+
+		// Validate based on field name (case-insensitive)
+		fieldName := strings.ToLower(field.Name)
+
+		switch fieldName {
+		case fieldId:
+			errorsSlice = append(errorsSlice, validateID(fieldValue)...)
+		case fieldTitle:
+			errorsSlice = append(errorsSlice, validateString(fieldValue, fieldName)...)
+		case fieldGenre:
+			errorsSlice = append(errorsSlice, validateString(fieldValue, fieldName)...)
+		case fieldAuthor:
+			errorsSlice = append(errorsSlice, validateString(fieldValue, fieldName)...)
+		}
+	}
+	return errorsSlice
+
 }
 
 // field specific validation function
@@ -72,15 +156,42 @@ func validateID(value reflect.Value) []string {
 	return nil
 }
 
-func validateString(value reflect.Value, typeOff string) []string {
+// validateString is specific function that validate string type.
+// When nameField: Author or Gangre etc
+func validateString(value reflect.Value, nameField string) []string {
 	if value.Kind() != reflect.String {
-		return []string{fmt.Sprintf("%s: must be string", typeOff)}
+		return []string{fmt.Sprintf("%s: must be string", nameField)}
 	}
 	if value.String() == "" {
-		return []string{fmt.Sprintf("%s: cannot be empty", typeOff)}
+		return []string{fmt.Sprintf("%s: cannot be empty", nameField)}
 	}
 	if len(value.String()) > 100 {
-		return []string{fmt.Sprintf("%s: cannot be large than 100", typeOff)}
+		return []string{fmt.Sprintf("%s: cannot be large than 100", nameField)}
+	}
+	// check malicious injections
+	message := validateMaliciousInjections(value.String())
+	if len(message) > 0 {
+		return []string{fmt.Sprintf("field: %s, %s", nameField, message)}
 	}
 	return nil
+}
+
+// validateMaliciousInjection if that instance is "clean",
+// it returns empty string, if not it returns message with info about
+// malicious pattern
+func validateMaliciousInjections(str string) string {
+	sqlInjectionRegex := regexp.MustCompile(`(?i)(\b(UNION|SELECT|INSERT|DELETE|UPDATE|
+	 DROP|ALTER|CREATE|EXEC)\b|--|;|/\*|\*/|xp_)`)
+
+	if sqlInjectionRegex.MatchString(str) {
+		return fmt.Sprintf("%s contains SQL injection patterns", str)
+	}
+
+	xssRegex := regexp.MustCompile(`(?i)(<script|javascript:|onerror=|onload=|onclick=)`)
+	if xssRegex.MatchString(str) {
+		return fmt.Sprintf("%s contatins XsS pattern", str)
+	}
+
+	return ""
+
 }
