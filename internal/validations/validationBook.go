@@ -20,6 +20,11 @@ const (
 	fieldAuthor = "author"
 )
 
+var (
+	sqlInjectionRegex = regexp.MustCompile(`(?i)(\b(UNION|SELECT|INSERT|DELETE|UPDATE|DROP|ALTER|CREATE|EXEC)\b|--|;|/\*|\*/|xp_)`)
+	xssRegex          = regexp.MustCompile(`(?i)(<script|javascript:|onerror=|onload=|onclick=)`)
+)
+
 // Warning
 // You could say why I don't use simple way like package validator or type Validator interface{Valudate()error}
 // But I want to to know how works with reflection proparly and safety.
@@ -180,14 +185,9 @@ func validateString(value reflect.Value, nameField string) []string {
 // it returns empty string, if not it returns message with info about
 // malicious pattern
 func validateMaliciousInjections(str string) string {
-	sqlInjectionRegex := regexp.MustCompile(`(?i)(\b(UNION|SELECT|INSERT|DELETE|UPDATE|
-	 DROP|ALTER|CREATE|EXEC)\b|--|;|/\*|\*/|xp_)`)
-
 	if sqlInjectionRegex.MatchString(str) {
 		return fmt.Sprintf("%s contains SQL injection patterns", str)
 	}
-
-	xssRegex := regexp.MustCompile(`(?i)(<script|javascript:|onerror=|onload=|onclick=)`)
 	if xssRegex.MatchString(str) {
 		return fmt.Sprintf("%s contatins XsS pattern", str)
 	}
