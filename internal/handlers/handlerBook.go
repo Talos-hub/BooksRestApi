@@ -5,9 +5,11 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Talos-hub/BooksRestApi/internal/abstraction"
 	"github.com/Talos-hub/BooksRestApi/internal/apperrors"
+	"github.com/Talos-hub/BooksRestApi/internal/models"
 	"github.com/Talos-hub/BooksRestApi/internal/services"
 )
 
@@ -19,8 +21,45 @@ type HandlerBooks struct {
 	logger  abstraction.Logger
 }
 
-//TODO
+// TODO
 // func ServeHTTP(w, r)
+func (h *HandlerBooks) CreateBook(w http.ResponseWriter, r *http.Request) {
+	var createdBook models.CreateBookRequest
+
+	err := json.NewDecoder(r.Body).Decode(&createdBook)
+	if err != nil {
+		h.sendErrorResponse(w, apperrors.NewAppError(400, "invalid JSON", err))
+	}
+	t := time.Now()
+
+	createdBook.CreatedAt = t
+
+	apperr := h.Service.CreateBook(createdBook)
+	if err != nil {
+		h.sendErrorResponse(w, apperr)
+	}
+
+	h.sendJsonResponse(w, http.StatusCreated, map[string]string{"message": "create new book seccessfully"})
+}
+
+// UpdateBook update a book from a storage by id
+func (h *HandlerBooks) UpdateBook(w http.ResponseWriter, r *http.Request) {
+	var updateBook models.UpdateBookRequest
+	err := json.NewDecoder(r.Body).Decode(&updateBook)
+	if err != nil {
+		h.sendErrorResponse(w, apperrors.NewAppError(400, "invalid JSON", err))
+	}
+	t := time.Now()
+
+	updateBook.UpdatedAt = t
+	appErr := h.Service.UpdateBook(updateBook.Book.ID, updateBook)
+	if appErr != nil {
+		h.sendErrorResponse(w, appErr)
+	}
+
+	h.sendJsonResponse(w, http.StatusOK, map[string]string{"message": "update a book successfully"})
+
+}
 
 // GetAllBooks send all books from a storage to a client
 func (h *HandlerBooks) GetAllBooks(w http.ResponseWriter) {
