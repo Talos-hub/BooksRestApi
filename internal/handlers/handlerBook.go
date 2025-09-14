@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Talos-hub/BooksRestApi/internal/abstraction"
@@ -12,6 +13,8 @@ import (
 	"github.com/Talos-hub/BooksRestApi/internal/models"
 	"github.com/Talos-hub/BooksRestApi/internal/services"
 )
+
+const booksRout = "books"
 
 // HandlerBooks is struct that contains methods
 // for handle clients requests
@@ -21,25 +24,49 @@ type HandlerBooks struct {
 	logger  abstraction.Logger
 }
 
-// TODO
-// func ServeHTTP(w, r)
+// ServeHTTP Route based on HTTP method and path
+func (h *HandlerBooks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := strings.Trim(r.URL.Path, "/")
+	parts := strings.Split(path, "/")
+
+	// Route
+	switch {
+	case r.Method == http.MethodGet && len(parts) == 1 && parts[0] == booksRout:
+		h.GetAllBooks(w)
+	case r.Method == http.MethodGet && len(parts) == 2 && parts[0] == booksRout:
+		h.GetBookById(w, parts[1])
+	case r.Method == http.MethodPost && len(parts) == 1 && parts[0] == booksRout:
+		h.CreateBook(w, r)
+	case r.Method == http.MethodPut && len(parts) == 1 && parts[0] == booksRout:
+		h.UpdateBook(w, r)
+	case r.Method == http.MethodDelete && len(parts) == 2 && parts[0] == booksRout:
+		h.DeleteBook(w, parts[1])
+	default:
+		h.sendErrorResponse(w, apperrors.NewAppError(404, "not found", nil))
+
+	}
+}
+
+// CreateBook create new book and save it in a storage
 func (h *HandlerBooks) CreateBook(w http.ResponseWriter, r *http.Request) {
 	var createdBook models.CreateBookRequest
 
 	err := json.NewDecoder(r.Body).Decode(&createdBook)
 	if err != nil {
 		h.sendErrorResponse(w, apperrors.NewAppError(400, "invalid JSON", err))
+		return
 	}
 	t := time.Now()
 
 	createdBook.CreatedAt = t
 
 	apperr := h.Service.CreateBook(createdBook)
-	if err != nil {
+	if apperr != nil {
 		h.sendErrorResponse(w, apperr)
+		return
 	}
 
-	h.sendJsonResponse(w, http.StatusCreated, map[string]string{"message": "create new book seccessfully"})
+	h.sendJsonResponse(w, http.StatusCreated, map[string]string{"message": "create new book successfully"})
 }
 
 // UpdateBook update a book from a storage by id
@@ -48,6 +75,7 @@ func (h *HandlerBooks) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&updateBook)
 	if err != nil {
 		h.sendErrorResponse(w, apperrors.NewAppError(400, "invalid JSON", err))
+		return
 	}
 	t := time.Now()
 
@@ -55,6 +83,7 @@ func (h *HandlerBooks) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	appErr := h.Service.UpdateBook(updateBook.Book.ID, updateBook)
 	if appErr != nil {
 		h.sendErrorResponse(w, appErr)
+		return
 	}
 
 	h.sendJsonResponse(w, http.StatusOK, map[string]string{"message": "update a book successfully"})
@@ -88,14 +117,12 @@ func (h *HandlerBooks) GetBookById(w http.ResponseWriter, strID string) {
 	book, appError := h.Service.GetBook(id)
 	if appError != nil {
 		h.sendErrorResponse(w, appError)
+		return
 	}
 
 	h.sendJsonResponse(w, http.StatusOK, book)
 
 }
-
-// func CreateBook()
-// func UpdateBook()
 
 // DeleteBook delete a book from a storage
 // Where is strId, it's an ID of a book
@@ -115,6 +142,7 @@ func (h *HandlerBooks) DeleteBook(w http.ResponseWriter, strID string) {
 	appErr := h.Service.DeleteBook(id)
 	if appErr != nil {
 		h.sendErrorResponse(w, appErr)
+		return
 	}
 
 	h.sendJsonResponse(w, http.StatusOK, map[string]string{"message": "Book deleted successfully"})
@@ -149,6 +177,7 @@ func (h *HandlerBooks) sendJsonResponse(w http.ResponseWriter, statusCode int, d
 	err := encoder.Encode(data)
 	if err != nil {
 		h.logger.Error("error encode response", "error", err, "data", data)
+		return
 	}
 
 }
@@ -172,6 +201,7 @@ func (h *HandlerBooks) sendErrorResponse(w http.ResponseWriter, appErr *apperror
 
 	if err != nil {
 		h.logger.Error("Error send an erro response", "error", err)
+		return
 	}
 
 }
