@@ -11,21 +11,21 @@ import (
 
 // BookService impemented handlers for hadle book.
 // It contains logger and storage interface
-type bookService struct {
+type BookService struct {
 	logger  abstraction.Logger  // Logger that needed for write logs
 	storage abstraction.Storage // it might be any strage for instance Postgresqls, Sqlite, json
 }
 
 // Construction that set a logger and a storage and returns pointer to bookService
-func NewBookService(logger abstraction.Logger, storage abstraction.Storage) *bookService {
-	return &bookService{
+func NewBookService(logger abstraction.Logger, storage abstraction.Storage) *BookService {
+	return &BookService{
 		logger:  logger,
 		storage: storage,
 	}
 }
 
 // GetBooks returns all books from storage
-func (s *bookService) GetBooks() ([]models.Book, *apperrors.AppError) {
+func (s *BookService) GetBooks() ([]models.Book, *apperrors.AppError) {
 	books, err := s.storage.GetAll()
 	if err != nil {
 		s.logger.Info("Error getting all books", "error", err)
@@ -35,7 +35,7 @@ func (s *bookService) GetBooks() ([]models.Book, *apperrors.AppError) {
 }
 
 // GetBook return a book by id
-func (s *bookService) GetBook(id uint64) (models.Book, *apperrors.AppError) {
+func (s *BookService) GetBook(id uint64) (models.Book, *apperrors.AppError) {
 	book, err := s.storage.GetById(id)
 	if err != nil {
 		s.logger.Info("Failed to get book by ID", "id", id, "error", err)
@@ -46,7 +46,7 @@ func (s *bookService) GetBook(id uint64) (models.Book, *apperrors.AppError) {
 }
 
 // Created created new book and save it to storage
-func (s *bookService) CreateBook(book models.CreateBookRequest) *apperrors.AppError {
+func (s *BookService) CreateBook(book models.CreateBookRequest) *apperrors.AppError {
 	// validation
 	err := validations.Validate(book)
 	if err != nil {
@@ -76,7 +76,7 @@ func (s *bookService) CreateBook(book models.CreateBookRequest) *apperrors.AppEr
 }
 
 // UpdateBook update a book in storage
-func (s *bookService) UpdateBook(id uint64, update models.UpdateBookRequest) *apperrors.AppError {
+func (s *BookService) UpdateBook(id uint64, update models.UpdateBookRequest) *apperrors.AppError {
 	// get a old book
 	book, err := s.storage.GetById(id)
 	if err != nil {
@@ -111,7 +111,8 @@ func (s *bookService) UpdateBook(id uint64, update models.UpdateBookRequest) *ap
 	return nil
 }
 
-func (s *bookService) DeleteBook(id uint64) *apperrors.AppError {
+// DeleteBook delete a book by id
+func (s *BookService) DeleteBook(id uint64) *apperrors.AppError {
 	if _, err := s.storage.GetById(id); err != nil {
 		return apperrors.NewAppError(404, "a book not found", err)
 	}
@@ -122,4 +123,10 @@ func (s *bookService) DeleteBook(id uint64) *apperrors.AppError {
 	}
 
 	return nil
+}
+
+// CloseStorage close a storage
+func (s *BookService) CloseStorage() error {
+	err := s.storage.Close()
+	return err
 }
