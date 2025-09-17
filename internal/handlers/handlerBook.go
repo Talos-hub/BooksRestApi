@@ -14,7 +14,7 @@ import (
 	"github.com/Talos-hub/BooksRestApi/internal/services"
 )
 
-const booksRout = "books"
+const booksRoute = "books"
 
 // HandlerBooks is struct that contains methods
 // for handle clients requests
@@ -24,6 +24,14 @@ type HandlerBooks struct {
 	logger  abstraction.Logger
 }
 
+// NewHandlerBooks return new HandlerBooks
+func NewHandlerBooks(service *services.BookService, logger abstraction.Logger) *HandlerBooks {
+	return &HandlerBooks{
+		Service: service,
+		logger:  logger,
+	}
+}
+
 // ServeHTTP Route based on HTTP method and path
 func (h *HandlerBooks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := strings.Trim(r.URL.Path, "/")
@@ -31,15 +39,15 @@ func (h *HandlerBooks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Route
 	switch {
-	case r.Method == http.MethodGet && len(parts) == 1 && parts[0] == booksRout:
+	case r.Method == http.MethodGet && len(parts) == 1 && parts[0] == booksRoute:
 		h.GetAllBooks(w)
-	case r.Method == http.MethodGet && len(parts) == 2 && parts[0] == booksRout:
+	case r.Method == http.MethodGet && len(parts) == 2 && parts[0] == booksRoute:
 		h.GetBookById(w, parts[1])
-	case r.Method == http.MethodPost && len(parts) == 1 && parts[0] == booksRout:
+	case r.Method == http.MethodPost && len(parts) == 1 && parts[0] == booksRoute:
 		h.CreateBook(w, r)
-	case r.Method == http.MethodPut && len(parts) == 1 && parts[0] == booksRout:
+	case r.Method == http.MethodPut && len(parts) == 1 && parts[0] == booksRoute:
 		h.UpdateBook(w, r)
-	case r.Method == http.MethodDelete && len(parts) == 2 && parts[0] == booksRout:
+	case r.Method == http.MethodDelete && len(parts) == 2 && parts[0] == booksRoute:
 		h.DeleteBook(w, parts[1])
 	default:
 		h.sendErrorResponse(w, apperrors.NewAppError(404, "not found", nil))
