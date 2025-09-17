@@ -22,7 +22,7 @@ type PostgresStorage struct {
 func NewPostgresStorage(config *config.DatabaseConfig, logger abstraction.Logger) (*PostgresStorage, error) {
 	pgxconf, err := pgxpool.ParseConfig(config.ConnectionString())
 	if err != nil {
-		return nil, fmt.Errorf("faild to parse connection string: %w", err)
+		return nil, fmt.Errorf("failed to parse connection string: %w", err)
 	}
 	//set connection pool settings
 	pgxconf.MaxConns = int32(config.MaxConns)
@@ -34,7 +34,7 @@ func NewPostgresStorage(config *config.DatabaseConfig, logger abstraction.Logger
 	// create connection pool
 	pool, err := pgxpool.NewWithConfig(context.Background(), pgxconf)
 	if err != nil {
-		return nil, fmt.Errorf("faild to create connection pool: %w", err)
+		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
