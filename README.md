@@ -30,7 +30,7 @@ A well-structured, production-ready RESTful API for managing a collection of boo
 
 1.  Clone the repo
     ```bash
-    git clone https://github.com/your-username/books-rest-api.git
+    git clone https://github.com/Talos-hub/BooksRestApi.git
     cd books-rest-api
     ```
 
@@ -38,7 +38,7 @@ A well-structured, production-ready RESTful API for managing a collection of boo
 
 3.  Run the application
     ```bash
-    go run cmd/main.go
+    go run cmd/api/main.go
     ```
 
 ## API Endpoints
